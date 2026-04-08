@@ -89,6 +89,23 @@ def pop_members(queue_id: int, count: int = 1):
         _reindex_queue(conn, queue_id)
         conn.commit()
 
+def delete_at(queue_id: int, position: int) -> bool:
+    with get_connection() as conn:
+        cur = conn.cursor()
+        # Check if the member exists at that position
+        cur.execute("SELECT id FROM queue_members WHERE queue_id = ? AND position = ?", (queue_id, position))
+        row = cur.fetchone()
+        
+        if not row:
+            return False
+            
+        # Delete the member
+        cur.execute("DELETE FROM queue_members WHERE id = ?", (row["id"],))
+        # Re-index to close the gap
+        _reindex_queue(conn, queue_id)
+        conn.commit()
+        return True
+
 def swap_members(queue_id: int, pos1: int, pos2: int) -> bool:
     with get_connection() as conn:
         cur = conn.cursor()

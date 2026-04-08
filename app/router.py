@@ -100,6 +100,29 @@ async def cmd_pop(message: Message):
     await update_queue_message(message, queue["id"], queue["name"], queue["message_id"])
     await message.delete()
 
+@router.message(Command("delete_at"))
+async def cmd_delete_at(message: Message):
+    if not await is_admin(message): return
+    queue = await get_queue_from_reply(message)
+    if not queue: return
+
+    args = message.text.split()
+    if len(args) < 2 or not args[1].isdigit():
+        return await message.reply("Формат: /delete_at <номер_в_списке>")
+
+    position = int(args[1])
+    
+    if db.delete_at(queue["id"], position):
+        await update_queue_message(message, queue["id"], queue["name"], queue["message_id"])
+    else:
+        # Optional: notify if the position was not found
+        await message.answer(f"Позиция №{position} не найдена в этой очереди.")
+        
+    try:
+        await message.delete()
+    except TelegramBadRequest:
+        pass
+
 @router.message(Command("swap"))
 async def cmd_swap(message: Message):
     if not await is_admin(message): return
